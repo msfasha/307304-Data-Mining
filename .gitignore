@@ -1,5 +1,6 @@
 *.pptx
-**/additional/
+**/beta/
+desktop.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
