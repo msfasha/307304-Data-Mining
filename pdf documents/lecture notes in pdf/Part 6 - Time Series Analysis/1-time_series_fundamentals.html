@@ -8360,23 +8360,8 @@ Period: 2020-01-01 00:00:00 to 2023-12-31 00:00:00
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="Classical-Decomposition-Methods">Classical Decomposition Methods<a class="anchor-link" href="#Classical-Decomposition-Methods">¶</a></h3><p>The most common method is <strong>moving average decomposition</strong>:</p>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<ol>
-<li>Estimate trend using moving average</li>
-<li>Detrend the series</li>
-<li>Estimate seasonal component by averaging detrended values for each season</li>
-<li>Calculate residuals: Residual = Original - Trend - Seasonal</li>
-</ol>
+<h3 id="Classical-Decomposition-%E2%80%94-Moving-Average-Method">Classical Decomposition — Moving Average Method<a class="anchor-link" href="#Classical-Decomposition-%E2%80%94-Moving-Average-Method">¶</a></h3><p><strong>The core idea</strong>: a moving average is a sliding window that replaces each data point with the average of its neighbors. Apply it with a window equal to the season length and the periodic ups and downs cancel out, leaving only the slow-moving <strong>trend</strong>.</p>
+<p>Everything else is arithmetic that flows from that single smoothing step:</p>
 </div>
 </div>
 </div>
@@ -8413,6 +8398,29 @@ Period: 2020-01-01 00:00:00 to 2023-12-31 00:00:00
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p><strong>Step 1 — Extract the trend</strong> <em>(the only step that uses moving average)</em></p>
+<p>Apply a <strong>centered moving average</strong> with window = season length (e.g., 365 for daily data). Because the window covers exactly one full cycle, the seasonal bumps average out and what remains is the underlying trend.</p>
+<hr/>
+<p><strong>Step 2 — Detrend</strong></p>
+<p>Subtract the trend from the original series. What remains is seasonal pattern + random noise.</p>
+<p>$$\text{Detrended}_t = Y_t - \text{Trend}_t$$</p>
+<hr/>
+<p><strong>Step 3 — Estimate the seasonal component</strong></p>
+<p>For each position within a season (e.g., every January, every Monday), average the detrended values across all cycles. This produces a stable, repeating seasonal pattern.</p>
+<hr/>
+<p><strong>Step 4 — Isolate the residual</strong></p>
+<p>Subtract both trend and seasonal from the original. What's left is the random noise neither component can explain.</p>
+<p>$$\text{Residual}_t = Y_t - \text{Trend}_t - \text{Seasonal}_t$$</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <div style="
     background-color:#8F0177;
     padding:15px;
@@ -8433,26 +8441,20 @@ Period: 2020-01-01 00:00:00 to 2023-12-31 00:00:00
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p><strong>The code below breaks the time series into its main parts.</strong></p>
+<p><strong>The code below runs moving average decomposition using <code>seasonal_decompose()</code>.</strong></p>
+<p><code>seasonal_decompose()</code> implements the exact 4-step algorithm above — it is the moving average decomposition method,
+packaged into a single function call. The <code>period=365</code> argument sets the season length,
+which determines the moving average window used in Step 1.</p>
 <p>More specifically:</p>
 <ul>
-<li><p>It tells Python the data has a <strong>yearly pattern</strong> (365 days).</p>
-</li>
-<li><p>It <strong>separates the data</strong> into:</p>
-<ul>
-<li>a <strong>trend</strong> (long-term direction),</li>
-<li>a <strong>seasonal pattern</strong> (repeating yearly ups and downs),</li>
-<li>and <strong>random noise</strong> (what’s left over).</li>
-</ul>
-</li>
-<li><p>It stores each part separately.</p>
-</li>
-<li><p>It prints the size of each component to confirm they match the original data.</p>
-</li>
+<li><code>model='additive'</code> tells it to use subtraction at each step (as in the formulas above),
+which is appropriate when the seasonal swings stay roughly constant in size.</li>
+<li>It returns separate objects for trend, seasonal, and residual — one value per original time step.</li>
+<li>It stores each component for later inspection and plotting.</li>
 </ul>
 <p>In short:</p>
 <blockquote>
-<p><strong>It decomposes the time series into trend, seasonality, and noise.</strong></p>
+<p><strong><code>seasonal_decompose()</code> applies moving average decomposition and returns the three components.</strong></p>
 </blockquote>
 </div>
 </div>
@@ -8496,6 +8498,30 @@ Seasonal: (1461,)
 Residual: (1461,)
 </pre>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p><strong>Do we always know <code>period</code>?</strong></p>
+<p><code>seasonal_decompose()</code> always requires it — the function will not infer a useful value on its own,
+even when the index has a frequency set.</p>
+<p>In most real-world cases the period comes from <strong>domain knowledge</strong>:
+you know your data is daily sales (period = 7 for weekly, or 365 for yearly), monthly revenue (period = 12), and so on.</p>
+<p>When it is not obvious, two tools help:</p>
+<ul>
+<li><strong>ACF plot</strong> — look for the lag where a strong spike repeats; that lag is your period.</li>
+<li><strong>Periodogram (FFT)</strong> — spectral analysis that highlights the dominant cycle length in the data.</li>
+</ul>
+<blockquote>
+<p>In this notebook we pass <code>period=365</code> because we built the dataset ourselves and know it has yearly seasonality.
+In real work, confirm the period from domain knowledge or an ACF plot before decomposing.</p>
+</blockquote>
 </div>
 </div>
 </div>
