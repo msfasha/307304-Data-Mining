@@ -8360,7 +8360,8 @@ Period: 2020-01-01 00:00:00 to 2023-12-31 00:00:00
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="Classical-Decomposition-%E2%80%94-Moving-Average-Method">Classical Decomposition — Moving Average Method<a class="anchor-link" href="#Classical-Decomposition-%E2%80%94-Moving-Average-Method">¶</a></h3><p><strong>The core idea</strong>: a moving average is a sliding window that replaces each data point with the average of its neighbors. Apply it with a window equal to the season length and the periodic ups and downs cancel out, leaving only the slow-moving <strong>trend</strong>.</p>
+<h3 id="Classical-Decomposition-%E2%80%94-Moving-Average-Method">Classical Decomposition — Moving Average Method<a class="anchor-link" href="#Classical-Decomposition-%E2%80%94-Moving-Average-Method">¶</a></h3><p><strong>The core idea</strong>: a moving average is a sliding window that replaces each data point with the average of its neighbors.<br/>
+<strong>Apply it with a window equal to the season length and the periodic ups and downs cancel out</strong>, leaving only the slow-moving <strong>trend</strong>.</p>
 <p>Everything else is arithmetic that flows from that single smoothing step:</p>
 </div>
 </div>
@@ -8398,19 +8399,265 @@ Period: 2020-01-01 00:00:00 to 2023-12-31 00:00:00
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p><strong>Step 1 — Extract the trend</strong> <em>(the only step that uses moving average)</em></p>
-<p>Apply a <strong>centered moving average</strong> with window = season length (e.g., 365 for daily data). Because the window covers exactly one full cycle, the seasonal bumps average out and what remains is the underlying trend.</p>
-<hr/>
+<p><strong>Step 1 — Extract the trend</strong>
+Apply a centered moving average with a window equal to the season length. Since the window spans one full seasonal cycle, seasonal fluctuations mostly cancel out, leaving the underlying trend.</p>
 <p><strong>Step 2 — Detrend</strong></p>
-<p>Subtract the trend from the original series. What remains is seasonal pattern + random noise.</p>
-<p>$$\text{Detrended}_t = Y_t - \text{Trend}_t$$</p>
+<p>$$
+\text{Detrended}_t = Y_t - \text{Trend}_t
+$$</p>
+<p>This leaves the seasonal component plus residual noise.</p>
+<p><strong>Step 3 — Estimate seasonality</strong>
+Group detrended values by their position within the seasonal cycle and average them. For example, average all Januaries, all Mondays, or all hour-3 observations.</p>
+<p><strong>Step 4 — Compute residuals</strong></p>
+<p>$$
+\text{Residual}_t = Y_t - \text{Trend}_t - \text{Seasonal}_t
+$$</p>
+<p>The residual is the unexplained variation after removing trend and seasonality.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<div style="
+    background-color:#8F0177;
+    padding:15px;
+    border-radius:8px;
+    color:white;
+    display:flex;
+    align-items:center;
+">
+<h3 style="margin:0;">Example: Applying Classical Additive Decomposition</h3>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Suppose we observe the following monthly sales over three years:</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Year 1</th>
+<th>Year 2</th>
+<th>Year 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>143</td>
+<td>138</td>
+<td>141</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>103</td>
+<td>98</td>
+<td>99</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>118</td>
+<td>121</td>
+<td>120</td>
+</tr>
+</tbody>
+</table>
+<p>Our objective is to decompose each observation into:</p>
+<p>$$
+Y_t = \text{Trend}_t + \text{Seasonal}_t + \text{Residual}_t
+$$</p>
 <hr/>
-<p><strong>Step 3 — Estimate the seasonal component</strong></p>
-<p>For each position within a season (e.g., every January, every Monday), average the detrended values across all cycles. This produces a stable, repeating seasonal pattern.</p>
+<h3 id="Step-1-%E2%80%94-Estimate-the-Trend-Using-a-Centered-Moving-Average">Step 1 — Estimate the Trend Using a Centered Moving Average<a class="anchor-link" href="#Step-1-%E2%80%94-Estimate-the-Trend-Using-a-Centered-Moving-Average">¶</a></h3><p>A <strong>centered moving average</strong> computes the average of observations before and after a time point and places the result at the center of the window.</p>
+<p>For example, if the seasonal cycle consists of three months, the trend for February in Year 2 could be estimated as:</p>
+<p>$$
+\text{Trend}_{\text{Feb},Y2}
+= \frac{141 + 98 + 120}{3}
+= 119.67
+\approx 120
+$$</p>
+<p>The idea is that averaging across one complete seasonal cycle causes the recurring seasonal effects to cancel out, leaving an estimate of the underlying trend.</p>
+<p>For simplicity, suppose the moving-average calculations produce an estimated trend of approximately 120 units throughout the series.</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Year 1 Trend</th>
+<th>Year 2 Trend</th>
+<th>Year 3 Trend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>120</td>
+<td>120</td>
+<td>120</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>120</td>
+<td>120</td>
+<td>120</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>120</td>
+<td>120</td>
+<td>120</td>
+</tr>
+</tbody>
+</table>
 <hr/>
-<p><strong>Step 4 — Isolate the residual</strong></p>
-<p>Subtract both trend and seasonal from the original. What's left is the random noise neither component can explain.</p>
-<p>$$\text{Residual}_t = Y_t - \text{Trend}_t - \text{Seasonal}_t$$</p>
+<h3 id="Step-2-%E2%80%94-Detrend-the-Series">Step 2 — Detrend the Series<a class="anchor-link" href="#Step-2-%E2%80%94-Detrend-the-Series">¶</a></h3><p>Subtract the estimated trend from each observation:</p>
+<p>$$
+\text{Detrended}_t = Y_t - \text{Trend}_t
+$$</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Year 1</th>
+<th>Year 2</th>
+<th>Year 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>143 - 120 = 23</td>
+<td>138 - 120 = 18</td>
+<td>141 - 120 = 21</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>103 - 120 = -17</td>
+<td>98 - 120 = -22</td>
+<td>99 - 120 = -21</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>118 - 120 = -2</td>
+<td>121 - 120 = 1</td>
+<td>120 - 120 = 0</td>
+</tr>
+</tbody>
+</table>
+<p>After detrending, the long-term level has been removed. The remaining values contain:</p>
+<p>$$
+\text{Detrended}_t = \text{Seasonal}_t + \text{Residual}_t
+$$</p>
+<hr/>
+<h3 id="Step-3-%E2%80%94-Estimate-the-Seasonal-Component">Step 3 — Estimate the Seasonal Component<a class="anchor-link" href="#Step-3-%E2%80%94-Estimate-the-Seasonal-Component">¶</a></h3><p>To estimate the seasonal effect for each month, average the detrended values from all years.</p>
+<p>For January:</p>
+<p>$$
+\text{Seasonal}_{\text{Jan}}
+= \frac{23 + 18 + 21}{3}
+= 20.67
+$$</p>
+<p>For February:</p>
+<p>$$
+\text{Seasonal}_{\text{Feb}}
+= \frac{-17 + (-22) + (-21)}{3}
+= -20
+$$</p>
+<p>For March:</p>
+<p>$$
+\text{Seasonal}_{\text{Mar}}
+= \frac{-2 + 1 + 0}{3}
+= -0.33
+\approx 0
+$$</p>
+<p>Estimated seasonal pattern:</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Seasonal Estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>+20.67</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>-20</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Notice that averaging reduces the random fluctuations and reveals the recurring seasonal effect.</p>
+<hr/>
+<h3 id="Step-4-%E2%80%94-Compute-the-Residuals">Step 4 — Compute the Residuals<a class="anchor-link" href="#Step-4-%E2%80%94-Compute-the-Residuals">¶</a></h3><p>Finally, subtract both the trend and the seasonal component.</p>
+<p>For January of Year 1:</p>
+<p>$$
+143 - 120 - 20.67 = 2.33
+$$</p>
+<p>For February of Year 1:</p>
+<p>$$
+103 - 120 - (-20) = 3
+$$</p>
+<p>For March of Year 1:</p>
+<p>$$
+118 - 120 - 0 = -2
+$$</p>
+<p>Residuals for Year 1:</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Residual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>2.33</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>-2</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3 id="Final-Decomposition-of-One-Observation">Final Decomposition of One Observation<a class="anchor-link" href="#Final-Decomposition-of-One-Observation">¶</a></h3><p>For January of Year 1:</p>
+<p>$$
+143 = 120 + 20.67 + 2.33
+$$</p>
+<p>where:</p>
+<ul>
+<li><strong>120</strong> = estimated trend</li>
+<li><strong>20.67</strong> = estimated seasonal effect</li>
+<li><strong>2.33</strong> = residual, or random noise</li>
+</ul>
+<p>This illustrates the complete decomposition process:</p>
+<ol>
+<li>Estimate the trend using a centered moving average.</li>
+<li>Remove the trend by detrending.</li>
+<li>Average detrended values to estimate seasonality.</li>
+<li>Remove both trend and seasonality to obtain residuals.</li>
+</ol>
 </div>
 </div>
 </div>
