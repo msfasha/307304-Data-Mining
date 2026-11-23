@@ -117,3 +117,6 @@ Desktop.ini
 
 # Pyre type checker
 .pyre/
+
+# Generated course website (20261/site/build.py)
+_build/

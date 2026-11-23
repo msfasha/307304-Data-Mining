@@ -1,5 +1,7 @@
 # 307304-Data-Mining
 
+[Open the student course website](https://msfasha.github.io/307304-Data-Mining/) (current semester, 20261).
+
 ## Course Content
 | Week(s)  | Topic                                                           | Key Points                                                                                             |
 |----------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|

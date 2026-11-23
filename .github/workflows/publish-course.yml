@@ -1,0 +1,41 @@
+name: Publish 20261 Data Mining course site
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["20261/**", "datasets/**", ".github/workflows/publish-course.yml"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.11.9
+      - run: python3 20261/site/build.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 20261/_build/site
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

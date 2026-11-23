@@ -1,0 +1,19 @@
+:root { --petra: #7a1f3d; }
+h1, h2, h3 { color: var(--petra); }
+a { color: var(--petra); }
+.navbar { background-color: var(--petra) !important; }
+
+/* navbar links must be white on burgundy */
+.navbar .navbar-brand, .navbar .navbar-title, .navbar .nav-link, .navbar .navbar-nav .nav-link,
+.navbar .navbar-nav .nav-link.active, .navbar a { color: #fff !important; }
+.navbar .nav-link:hover { color: #f3d9e2 !important; }
+/* sidebar / table of contents links */
+.sidebar nav a, #TOC a { color: #333; }
+#TOC a.active, .sidebar nav a.active { color: var(--petra) !important; font-weight: 600; }
+/* search icon, toggler and any other navbar icon: white too */
+.navbar #quarto-search .aa-DetachedSearchButtonIcon, .navbar #quarto-search svg,
+.navbar .aa-DetachedSearchButton, .navbar .aa-DetachedSearchButtonIcon,
+.navbar .bi, .navbar .navbar-toggler { color: #fff !important; }
+.navbar .aa-DetachedSearchButtonIcon svg, .navbar #quarto-search svg { fill: #fff !important; stroke: #fff; }
+.navbar .navbar-toggler-icon { filter: invert(1); }
+.navbar #quarto-search.type-overlay .aa-Autocomplete svg.aa-SubmitIcon { color: #fff !important; fill: #fff !important; }

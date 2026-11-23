@@ -1,0 +1,26 @@
+project:
+  type: website
+  output-dir: _site
+  resources:
+    - "downloads/*.zip"
+    - "module-*/**/*.pdf"
+    - "module-*/**/*.ipynb"
+    - "module-*/**/*.csv"
+    - "module-*/**/*.txt"
+    - "module-*/**/*.png"
+    - "module-*/**/*.jpg"
+    - "datasets/*"
+website:
+  title: "307304 Data Mining"
+  navbar:
+    left:
+      - text: "Course"
+        href: index.qmd
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    code-copy: true
+execute:
+  enabled: false
