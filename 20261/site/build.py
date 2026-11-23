@@ -91,8 +91,8 @@ def main():
     for slug, numtxt, title, links in cards:
         def row(l, h):
             opt = " - (optional)" if " - Optional" in l else ""
-            return f"- [{l}]({quote(h)})" + opt
-        rows = "\n".join(row(l, h) for l, h in links)
+            return f"[{l}]({quote(h)})" + opt
+        rows = "\n\n".join(row(l, h) for l, h in links)   # plain paragraphs: no bullets, spaced lines
         (STAGE / slug / "index.qmd").write_text(f'---\ntitle: "Module {numtxt} - {title}"\n---\n\n{rows}\n',
                                                 encoding="utf-8")
     body = ["---", 'title: "307304 Data Mining"', f'subtitle: "{SEMESTER}"', "toc: false", "---", "",
