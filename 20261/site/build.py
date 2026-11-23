@@ -87,10 +87,8 @@ def main():
             for p in sorted(folder.glob("*.ipynb")):
                 shutil.copy(p, out / safe(p.name))
                 st = Path(safe(p.name)).stem
-                dl_nb = STAGE / "_dl" / slug / pre
-                dl_nb.mkdir(parents=True, exist_ok=True)
-                shutil.copy(p, dl_nb / safe(p.name))   # '_dl' is not rendered, so quarto leaves the link alone
-                items.append((p.stem, [("HTML", pre + st + ".html"), ("ipynb", f"../_dl/{slug}/{pre}{safe(p.name)}"),
+                gh = f"{REPO_URL}/blob/main/{p.relative_to(REPO).as_posix()}"   # GitHub renders notebooks; browsers show raw JSON
+                items.append((p.stem, [("HTML", pre + st + ".html"), ("ipynb", gh),
                                        ("PDF", pre + st + ".pdf")], optional))
                 pages.append(f"{slug}/{pre}{st}.html")
                 nb_bundle.append((p, f"{slug}/{pre}{p.name}"))
@@ -112,7 +110,7 @@ def main():
 
     for slug, numtxt, title, items in cards:
         def row(name, links, optional):
-            ls = " ".join(f"[({l})]({quote(h)})" for l, h in links)
+            ls = " ".join(f"[({l})]({quote(h, safe=":/")})" for l, h in links)
             return f"{name} - {ls}" + (" - (optional)" if optional else "")
         rows = "\n\n".join(row(*i) for i in items)   # plain paragraphs: one line per material, no bullets
         (STAGE / slug / "index.qmd").write_text(f'---\ntitle: "Module {numtxt} - {title}"\n---\n\n{rows}\n',
