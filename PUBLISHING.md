@@ -36,19 +36,23 @@ This repository is fully self-contained: everything needed to rebuild and publis
 ## What each module folder must contain
 
 Modules are **auto-discovered**: any folder `20261/Module <N>-<Title>/` becomes a module page, ordered by N
-(a decimal such as `2.1` works). Nothing to register. Files are picked up by type:
+(a decimal such as `2.1` works). Nothing to register. Each material is **one line**: `name - (HTML) (ipynb) (PDF)`.
 
 | Location | Becomes |
 |---|---|
-| `*.pdf` in the module folder | "Slides (PDF)" link + PDF zip |
-| `*.ipynb` in the module folder | "Lab (HTML)" + notebook download + notebooks zip |
-| `additional/*.pdf`, `additional/*.ipynb` | "Additional reading / lab" links |
-| `optional/*.pdf`, `optional/*.ipynb` | "Optional reading / lab" links, marked "(optional)" |
-| `*.md` (module, additional, optional) | HTML reading page (first `# ` heading becomes the page title) |
+| `*.ipynb` in the module folder | one line: (HTML) lab page, (ipynb) download, (PDF) **generated automatically** |
+| `*.pdf` in the module folder | one line: name - (PDF) (hand-made, e.g. exported slides) |
+| `additional/`, `optional/` | same rules; `optional/` lines are marked "(optional)" |
+| `*.md` (module, additional, optional) | one line: (HTML) and (PDF) generated (first `# ` heading becomes the title) |
 | `*.png/.jpg/.csv/.txt/.xlsx/.json` in the module folder | copied beside the notebooks (images used by notebooks, small data) |
 | `datasets/*` (repo root) | "Datasets (.zip)" and included in the labs zip |
 
-Link labels read "<file name> - <kind>" (e.g. "1-simple linear regression - Lab (HTML)"). Notebook downloads are staged
+**PDFs are never committed.** The build prints every rendered notebook/markdown page to PDF with headless Chrome
+(preinstalled on GitHub's `ubuntu-24.04` runners; locally `google-chrome` or `chromium` must be installed), so the
+PDF always matches the notebook. Nothing to export or maintain by hand; just save the notebook with its outputs,
+commit and push. All PDFs (generated and hand-made) are in "Download all PDFs (.zip)".
+
+Notebook downloads are staged
 under `_dl/` on purpose: Quarto rewrites any link to a rendered `.ipynb` into its `.html`, so the raw copies live
 in a folder it does not render.
 

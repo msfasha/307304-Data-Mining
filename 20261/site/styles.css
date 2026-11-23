@@ -17,3 +17,9 @@ a { color: var(--petra); }
 .navbar .aa-DetachedSearchButtonIcon svg, .navbar #quarto-search svg { fill: #fff !important; stroke: #fff; }
 .navbar .navbar-toggler-icon { filter: invert(1); }
 .navbar #quarto-search.type-overlay .aa-Autocomplete svg.aa-SubmitIcon { color: #fff !important; fill: #fff !important; }
+
+/* PDF output (printed from the page by build.py): content only */
+@media print {
+  .navbar, #quarto-sidebar, #quarto-margin-sidebar, .nav-footer, #TOC { display: none !important; }
+  .quarto-container, #quarto-content, main { margin: 0 !important; max-width: 100% !important; }
+}

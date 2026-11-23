@@ -41,58 +41,80 @@ def md_page(src, dst, title):
     text = re.sub(r"\A# .*\n", "", src.read_text(encoding="utf-8"), count=1)
     dst.write_text(f'---\ntitle: "{title}"\ntoc: true\n---\n\n{text}', encoding="utf-8")
 
+def chrome():
+    for c in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"):
+        if shutil.which(c):
+            return c
+    sys.exit("Chrome/Chromium is required to create the PDFs (preinstalled on GitHub runners).")
+
+def print_pdfs(site, pages):
+    """Print each rendered HTML page to PDF (same name, .pdf) so PDFs always match the notebooks."""
+    exe = chrome()
+    prof = SRC / "_build" / "chrome-profile"
+    for rel in pages:
+        html = site / rel
+        pdf = html.with_suffix(".pdf")
+        subprocess.run([exe, "--headless=new", "--no-sandbox", "--disable-gpu", "--no-pdf-header-footer",
+                        f"--user-data-dir={prof}", "--virtual-time-budget=20000",
+                        f"--print-to-pdf={pdf}", html.as_uri()],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+        if not pdf.exists() or pdf.stat().st_size < 1000:
+            sys.exit(f"PDF not created for {html}")
+
 def main():
     shutil.rmtree(STAGE, ignore_errors=True)
     STAGE.mkdir(parents=True)
     shutil.copy(HERE / "_quarto.yml", STAGE / "_quarto.yml")
     shutil.copy(HERE / "styles.css", STAGE / "styles.css")
-    nb_bundle, pdf_bundle, cards = [], [], []
+    nb_bundle, cards, pages = [], [], []   # pages: rendered html (relative to site) that also get a PDF
+    pdf_src = []                           # hand-made PDFs (slides etc.): (source, archive name)
 
     for num, numtxt, title, s in modules():
         slug = f"module-{numtxt.replace('.', '-')}"
         d = STAGE / slug
         d.mkdir()
-        links = []   # (label, href)
+        items = []   # (name, [(label, href), ...], optional)
 
-        def add_files(folder, sub, kind_pdf, kind_nb, bundle_pdf):
+        def add_files(folder, sub, optional):
             """Copy PDFs / notebooks / markdown / data of one folder (module root or a subfolder)."""
             out = d / sub if sub else d
             out.mkdir(exist_ok=True)
             pre = f"{sub}/" if sub else ""
             for p in sorted(folder.glob("*.pdf")):
                 shutil.copy(p, out / safe(p.name))
-                links.append((f"{p.stem} - {kind_pdf}", pre + safe(p.name)))
-                if bundle_pdf:
-                    pdf_bundle.append((p, f"{slug}/{pre}{p.name}"))
+                items.append((p.stem, [("PDF", pre + safe(p.name))], optional))
+                pdf_src.append((p, f"{slug}/{pre}{p.name}"))
             for p in sorted(folder.glob("*.ipynb")):
                 shutil.copy(p, out / safe(p.name))
                 st = Path(safe(p.name)).stem
-                links.append((f"{p.stem} - {kind_nb} (HTML)", pre + st + ".html"))
                 dl_nb = STAGE / "_dl" / slug / pre
                 dl_nb.mkdir(parents=True, exist_ok=True)
                 shutil.copy(p, dl_nb / safe(p.name))   # '_dl' is not rendered, so quarto leaves the link alone
-                links.append((f"{p.stem} - {kind_nb} notebook (.ipynb)", f"../_dl/{slug}/{pre}{safe(p.name)}"))
+                items.append((p.stem, [("HTML", pre + st + ".html"), ("ipynb", f"../_dl/{slug}/{pre}{safe(p.name)}"),
+                                       ("PDF", pre + st + ".pdf")], optional))
+                pages.append(f"{slug}/{pre}{st}.html")
                 nb_bundle.append((p, f"{slug}/{pre}{p.name}"))
             for p in sorted(folder.glob("*.md")):
-                md_page(p, out / (Path(safe(p.name)).stem + ".qmd"), p.stem)
-                links.append((f"{p.stem} - Reading (HTML)", pre + Path(safe(p.name)).stem + ".html"))
+                st = Path(safe(p.name)).stem
+                md_page(p, out / (st + ".qmd"), p.stem)
+                items.append((p.stem, [("HTML", pre + st + ".html"), ("PDF", pre + st + ".pdf")], optional))
+                pages.append(f"{slug}/{pre}{st}.html")
             for p in sorted(folder.iterdir()):
                 if p.is_file() and p.suffix.lower() in IMG + DATA:
                     shutil.copy(p, out / safe(p.name))
                     nb_bundle.append((p, f"{slug}/{pre}{p.name}"))
 
-        add_files(s, "", "Slides (PDF)", "Lab", True)
-        for sub, kp, kn in (("additional", "Additional reading (PDF)", "Additional lab"),
-                            ("optional", "Optional reading (PDF)", "Optional lab")):
+        add_files(s, "", False)
+        for sub in ("additional", "optional"):
             if (s / sub).is_dir():
-                add_files(s / sub, sub, kp, kn, True)
-        cards.append((slug, numtxt, title, links))
+                add_files(s / sub, sub, sub == "optional")
+        cards.append((slug, numtxt, title, items))
 
-    for slug, numtxt, title, links in cards:
-        def row(l, h):
-            opt = " - (optional)" if " - Optional" in l else ""
-            return f"[{l}]({quote(h)})" + opt
-        rows = "\n\n".join(row(l, h) for l, h in links)   # plain paragraphs: no bullets, spaced lines
+    for slug, numtxt, title, items in cards:
+        def row(name, links, optional):
+            ls = " ".join(f"[({l})]({quote(h)})" for l, h in links)
+            return f"{name} - {ls}" + (" - (optional)" if optional else "")
+        rows = "\n\n".join(row(*i) for i in items)   # plain paragraphs: one line per material, no bullets
         (STAGE / slug / "index.qmd").write_text(f'---\ntitle: "Module {numtxt} - {title}"\n---\n\n{rows}\n',
                                                 encoding="utf-8")
     body = ["---", 'title: "307304 Data Mining"', f'subtitle: "{SEMESTER}"', "toc: false", "---", "",
@@ -100,14 +122,19 @@ def main():
     body += [f"- [Module {n} - **{t}**]({slug}/index.qmd)" for slug, n, t, _ in cards]
     body += ["", "## Downloads", "",
              "- [Download all labs and datasets (.zip)](downloads/datamining-labs-notebooks.zip)",
-             "- [Download all PDFs: slides and readings (.zip)](downloads/datamining-course-pdfs.zip)",
+             "- [Download all PDFs: slides, notebooks, readings (.zip)](downloads/datamining-course-pdfs.zip)",
              "- [Datasets (.zip)](downloads/datamining-datasets.zip)",
              f"- [Source on GitHub]({REPO_URL})", ""]
     (STAGE / "index.qmd").write_text("\n".join(body), encoding="utf-8")
 
-    # zips go in the stage so quarto copies them as resources
-    dl = STAGE / "downloads"
-    dl.mkdir()
+    subprocess.run(["quarto", "render"], cwd=STAGE, check=True)
+    site = STAGE / "_site"
+    print_pdfs(site, pages)
+
+    # downloads are zipped after rendering, so they include the generated PDFs
+    dl = site / "downloads"
+    dl.mkdir(exist_ok=True)
+    pdf_bundle = pdf_src + [((site / pg).with_suffix(".pdf"), str(Path(pg).with_suffix(".pdf"))) for pg in pages]
     datasets = [(p, f"datasets/{p.name}") for p in sorted(DATASETS.glob("*")) if p.is_file()] if DATASETS.is_dir() else []
     readme = ("Run labs in Jupyter / VS Code / Colab. One folder per module.\n"
               "Notebooks load their datasets from GitHub; local copies are in datasets/.\n")
@@ -120,9 +147,8 @@ def main():
             if "notebooks" in name:
                 z.writestr("README.txt", readme)
 
-    subprocess.run(["quarto", "render"], cwd=STAGE, check=True)
     shutil.rmtree(OUT, ignore_errors=True)
-    shutil.move(str(STAGE / "_site"), OUT)
+    shutil.move(str(site), OUT)
     print("Built ->", OUT)
 
 if __name__ == "__main__":
