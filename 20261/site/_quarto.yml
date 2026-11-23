@@ -10,6 +10,7 @@ project:
     - "module-*/**/*.png"
     - "module-*/**/*.jpg"
     - "datasets/*"
+    - "_dl/**"
 website:
   title: "307304 Data Mining"
   navbar:

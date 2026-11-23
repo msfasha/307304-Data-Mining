@@ -48,6 +48,10 @@ Modules are **auto-discovered**: any folder `20261/Module <N>-<Title>/` becomes 
 | `*.png/.jpg/.csv/.txt/.xlsx/.json` in the module folder | copied beside the notebooks (images used by notebooks, small data) |
 | `datasets/*` (repo root) | "Datasets (.zip)" and included in the labs zip |
 
+Link labels read "<file name> - <kind>" (e.g. "1-simple linear regression - Lab (HTML)"). Notebook downloads are staged
+under `_dl/` on purpose: Quarto rewrites any link to a rendered `.ipynb` into its `.html`, so the raw copies live
+in a folder it does not render.
+
 Not published: `*.pptx`/`*.docx` (gitignored), `beta/` folders (gitignored), folders starting with `skip_`,
 and anything in other semester folders. File names with spaces are staged with underscores (downloads inside
 the zips keep their original names). Typos in folder names can be corrected for display only in `TITLE_FIXES`

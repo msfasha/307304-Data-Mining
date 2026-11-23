@@ -61,18 +61,21 @@ def main():
             pre = f"{sub}/" if sub else ""
             for p in sorted(folder.glob("*.pdf")):
                 shutil.copy(p, out / safe(p.name))
-                links.append((f"{kind_pdf}: {p.stem}", pre + safe(p.name)))
+                links.append((f"{p.stem} - {kind_pdf}", pre + safe(p.name)))
                 if bundle_pdf:
                     pdf_bundle.append((p, f"{slug}/{pre}{p.name}"))
             for p in sorted(folder.glob("*.ipynb")):
                 shutil.copy(p, out / safe(p.name))
                 st = Path(safe(p.name)).stem
-                links.append((f"{kind_nb} (HTML): {p.stem}", pre + st + ".html"))
-                links.append((f"{kind_nb} notebook (.ipynb): {p.stem}", pre + safe(p.name)))
+                links.append((f"{p.stem} - {kind_nb} (HTML)", pre + st + ".html"))
+                dl_nb = STAGE / "_dl" / slug / pre
+                dl_nb.mkdir(parents=True, exist_ok=True)
+                shutil.copy(p, dl_nb / safe(p.name))   # '_dl' is not rendered, so quarto leaves the link alone
+                links.append((f"{p.stem} - {kind_nb} notebook (.ipynb)", f"../_dl/{slug}/{pre}{safe(p.name)}"))
                 nb_bundle.append((p, f"{slug}/{pre}{p.name}"))
             for p in sorted(folder.glob("*.md")):
                 md_page(p, out / (Path(safe(p.name)).stem + ".qmd"), p.stem)
-                links.append((f"Reading (HTML): {p.stem}", pre + Path(safe(p.name)).stem + ".html"))
+                links.append((f"{p.stem} - Reading (HTML)", pre + Path(safe(p.name)).stem + ".html"))
             for p in sorted(folder.iterdir()):
                 if p.is_file() and p.suffix.lower() in IMG + DATA:
                     shutil.copy(p, out / safe(p.name))
@@ -86,8 +89,10 @@ def main():
         cards.append((slug, numtxt, title, links))
 
     for slug, numtxt, title, links in cards:
-        rows = "\n".join(f"- [{l}]({quote(h)})" + (" - (optional)" if l.startswith("Optional") else "")
-                         for l, h in links)
+        def row(l, h):
+            opt = " - (optional)" if " - Optional" in l else ""
+            return f"- [{l}]({quote(h)})" + opt
+        rows = "\n".join(row(l, h) for l, h in links)
         (STAGE / slug / "index.qmd").write_text(f'---\ntitle: "Module {numtxt} - {title}"\n---\n\n{rows}\n',
                                                 encoding="utf-8")
     body = ["---", 'title: "307304 Data Mining"', f'subtitle: "{SEMESTER}"', "toc: false", "---", "",
